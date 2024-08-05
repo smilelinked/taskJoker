@@ -1,0 +1,30 @@
+[flake8]
+# Max line length for code
+max-line-length = 88
+
+# Which errors and warnings to ignore
+ignore = E203, E266, E501, W503, F401
+
+# Which errors and warnings to select (B is for bugbear plugin)
+select = B,C,E,F,W,T4,B9
+
+# Paths to exclude from linting
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    venv,
+    .venv,
+    .env,
+    .tox,
+    .mypy_cache,
+    .pytest_cache,
+    migrations
+
+# Show statistics for error and warning codes
+statistics = True
+
+# Enable flake8 plugins
+# Additional dependencies need to be installed via pip, e.g.:
+# pip install flake8-bugbear flake8-comprehensions

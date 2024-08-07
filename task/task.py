@@ -60,7 +60,7 @@ def run_plane(self, uid, cid):
     a, b, c = Plane_PoOr(img, result, if_save=False)  # 平面方程1
     a1, b1, c1 = Plane_LMCoLLCoLNC(img, result, if_save=False)  # 平面方程2
     angles, distences = Distance_Angle(img, result)  # 角度，距离
-    logger.info(a, b, c)
-    logger.info(a1, b1, c1)
-    logger.info(angles, distences)
+    logger.info(f'we get plane 1: {a}, {b}, {c}')
+    logger.info(f'we get plane 2: {a1}, {b1}, {c1}')
+    logger.info(f'we get angele: {angles} and distance: {distences}')
     return f'{output_prefix}/output_image.nii.gz'

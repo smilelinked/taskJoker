@@ -24,7 +24,7 @@ def predict():
 
 
 @app.route('/predict/plane', methods=['POST'])
-def predict():
+def predict_plane():
     try:
         uid = request.json['uid']
         cid = request.json['cid']

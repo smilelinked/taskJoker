@@ -4,8 +4,8 @@ import threading
 from app.app import make_celery
 from flask import Flask, request, jsonify
 from utils.basic_setting import logger
-from task.task import run_nnunet
-
+from task.task import run_nnunet, run_plane
+from AGENT.predict_landmarks import load_models
 
 app = Flask(__name__)
 
@@ -17,6 +17,19 @@ def predict():
         cid = request.json['cid']
 
         task = run_nnunet.apply_async(args=[uid, cid])
+        return jsonify({'task_id': task.id}), 202
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/predict/plane', methods=['POST'])
+def predict_plane():
+    try:
+        uid = request.json['uid']
+        cid = request.json['cid']
+
+        task = run_plane.apply_async(args=[uid, cid])
         return jsonify({'task_id': task.id}), 202
 
     except Exception as e:
@@ -65,6 +78,8 @@ if __name__ == '__main__':
     parser.add_argument('--bucket_name', type=str, default="ct", help='OBS bucket name')
     args = parser.parse_args()
 
+    # ------------- Load Models ------------------
+    agent_lst = load_models()
     # 设置中断信号处理器
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -76,6 +91,7 @@ if __name__ == '__main__':
     )
     app.config['s3_client'] = s3
     app.config['bucket_name'] = args.bucket_name
+    app.config['agent_lst'] = agent_lst
 
     # 创建 Celery 应用
     celery_instance = make_celery(app)

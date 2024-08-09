@@ -15,6 +15,5 @@ redisConfig = {
 
 obsConfig = {
     "bucket": os.getenv("BUCKET", "smilelink"),
-    "get_obj_prefix": lambda uid, cid: f'doctor/{uid}/ct/{cid}/models/images',
-    "put_obj_prefix": lambda uid, cid: f'doctor/{uid}/ct/{cid}/models/custom',
+    "obs_prefix": lambda uid, cid: f'doctor/{uid}/digitalbow-ct/{cid}',
 }

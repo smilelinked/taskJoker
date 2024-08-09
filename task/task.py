@@ -1,13 +1,14 @@
 import json
 import os
-import subprocess
-
+from datetime import datetime
 from celery import shared_task, current_app
 import SimpleITK as sitk
+import torch
 from configs.config import obsConfig
 from utils.basic_setting import logger
 from AGENT.draw_a_plane import Plane_PoOr, Plane_LMCoLLCoLNC, Distance_Angle
 from AGENT.predict_landmarks import predict_npy, load_models, load_environment, predict_now
+from nnunetv2.imageio.simpleitk_reader_writer import SimpleITKIO
 
 # 分割和识别关键点所需nii路径
 NII_PATH = '/models/ct/nii/ct.nii.gz'
@@ -85,18 +86,29 @@ def run_nnunet(self, uid, cid):
     except Exception as e:
         logger.error(f"download file {nii_path} from obs failed: {e}")
 
-    # please CHANGE me to real commands or function call.
-    # command = [
-    #     'nnUNet_predict', '-i', input_path, '-o', '/data', '-t', 'TaskXX', '-m', '3d_fullres'
-    # ]
-    command = ['sleep', '10']
-    result = subprocess.run(command, capture_output=True, text=True)
+    predictor = self.app.conf['predictor']
+    logger.info(f"we get s3 client {s3_client} and bucket name {bucket_name}")
+    input_prefix = obsConfig['get_obj_prefix'](uid, cid)
+    output_prefix = obsConfig['put_obj_prefix'](uid, cid)
 
-    if result.returncode != 0:
-        raise Exception(result.stderr)
+    input_path = f'{input_prefix}/input_image.nii.gz'
+    output_path = f'{output_prefix}/output_image.nii.gz'
+    logger.info(f" we get input url {input_path} and upload url {output_path}")
 
+    img_arr, img, props = SimpleITKIO().read_image_with_img('/root/autodl-tmp/1000813648_20180116.nii.gz')
+    patient_index = datetime.now().strftime("%Y%m%d%H%M%S")
+    if not os.path.exists('./tmp'):
+        os.mkdir('./tmp')
+    tmp_path = f'./tmp/{patient_index}'
+    predictor.predict_single_npy_array(img_arr, props, None, tmp_path, False)
+    torch.cuda.synchronize()
+    torch.cuda.empty_cache()
     drc_path = obs_prefix + DRC_PREFIX
-    # TODO
+    try:
+        upload_file_to_s3(s3_client, bucket_name, drc_path, output_path)
+    except Exception as e:
+        logger.error(f"upload file {drc_path} to obs failed: {e}")
+
     return drc_path
 
 

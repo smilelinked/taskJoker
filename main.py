@@ -1,11 +1,14 @@
 import signal
 import boto3
 import threading
+import torch
+from os.path import join
 from app.app import make_celery
 from flask import Flask, request, jsonify
 from utils.basic_setting import logger
 from task.task import run_nnunet, run_plane
 from AGENT.predict_landmarks import load_models
+from nnunetv2.inference.predict_from_raw_data import nnUNetPredictor
 
 app = Flask(__name__)
 
@@ -80,6 +83,21 @@ if __name__ == '__main__':
 
     # ------------- Load Models ------------------
     agent_lst = load_models()
+    predictor = nnUNetPredictor(
+        tile_step_size=0.5,
+        use_gaussian=True,
+        use_mirroring=True,
+        perform_everything_on_device=True,
+        device=torch.device('cuda', 0),
+        verbose=False,
+        verbose_preprocessing=False,
+        allow_tqdm=True
+    )
+    predictor.initialize_from_trained_model_folder(
+        join('/root/models/', 'nnu3d_fullres'),
+        use_folds=(0,),
+        checkpoint_name='checkpoint_final.pth',
+    )
     # 设置中断信号处理器
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -92,11 +110,11 @@ if __name__ == '__main__':
     app.config['s3_client'] = s3
     app.config['bucket_name'] = args.bucket_name
     app.config['agent_lst'] = agent_lst
+    app.config['predictor'] = predictor
 
     # 创建 Celery 应用
     celery_instance = make_celery(app)
 
     # 启动 Celery worker 线程
     threading.Thread(target=lambda: celery_instance.worker_main(['worker', '--loglevel=info', "--pool=solo"])).start()
-
     app.run(host='0.0.0.0', port=args.port)

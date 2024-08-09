@@ -2,7 +2,7 @@ import os
 
 redisConfig = {
     "namespace": "smilelink",
-    "key": "crown",
+    "key": "ct",
     "redis_config": {
         "host": os.getenv("REDIS", "127.0.0.1"),
         "port": 6379,
